@@ -3008,6 +3008,7 @@ MonoBehaviour:
   resultTextMesh: {fileID: 736524932}
   winColor: {r: 0, g: 1, b: 0.08959627, a: 1}
   loseColor: {r: 1, g: 0.1641509, b: 0.1641509, a: 1}
+  tieColor: {r: 0.5924529, g: 0.5924529, b: 0.5924529, a: 1}
 --- !u!1 &1534181450
 GameObject:
   m_ObjectHideFlags: 0

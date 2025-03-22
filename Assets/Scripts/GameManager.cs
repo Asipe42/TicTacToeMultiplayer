@@ -34,6 +34,7 @@ public partial class GameManager
     public EventHandler OnGameStarted;
     public EventHandler OnCurrentPlayablePlayerTypeChanged;
     public EventHandler<OnGameWinArgs> OnGameWin;
+    public EventHandler OnGameTie;
     public EventHandler OnRematch;
 
     public class OnClickedOnGridPositionEventArgs : EventArgs
@@ -244,6 +245,12 @@ public partial class GameManager : NetworkBehaviour
             winPlayerType = winPlayerType
         });
     }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerOnGameTieRpc()
+    {
+        OnGameTie.Invoke(this, EventArgs.Empty);
+    }
     
     [Rpc(SendTo.ClientsAndHost)]
     private void TriggerRematchRpc()
@@ -258,9 +265,28 @@ public partial class GameManager : NetworkBehaviour
             if (TestWinnerLine(lineList[i]))
             {
                 currentPlayablePlayerType.Value = PlayerType.None;
-                TriggerOnGameWinRpc(i, playerTypeArray[lineList[i].centerGridPosition.x, lineList[i].centerGridPosition.y]);
-                break;
+                
+                 TriggerOnGameWinRpc(i, playerTypeArray[lineList[i].centerGridPosition.x, lineList[i].centerGridPosition.y]);
+                return;
             }
+        }
+
+        bool hasTie = true;
+        for (int x = 0; x < playerTypeArray.GetLength(0); x++)
+        {
+            for (int y = 0; y < playerTypeArray.GetLength(1); y++)
+            {
+                if (playerTypeArray[x, y] == PlayerType.None)
+                {
+                    hasTie = false;
+                    break;
+                }
+            }
+        }
+
+        if (hasTie)
+        {
+            TriggerOnGameTieRpc();
         }
     }
     
