@@ -34,6 +34,7 @@ public partial class GameManager
     public EventHandler OnGameStarted;
     public EventHandler OnCurrentPlayablePlayerTypeChanged;
     public EventHandler<OnGameWinArgs> OnGameWin;
+    public EventHandler OnRematch;
 
     public class OnClickedOnGridPositionEventArgs : EventArgs
     {
@@ -155,22 +156,7 @@ public partial class GameManager : NetworkBehaviour
             OnCurrentPlayablePlayerTypeChanged?.Invoke(this, EventArgs.Empty);
         };
     }
-
-    private void NetworkManager_OnClientConnectedCallback(ulong obj)
-    {
-        if (NetworkManager.Singleton.ConnectedClients.Count == 2)
-        {
-            currentPlayablePlayerType.Value = PlayerType.Cross;
-            TriggerOnGameStartedRpc();
-        }
-    }
-
-    [Rpc(SendTo.ClientsAndHost)]
-    private void TriggerOnGameStartedRpc()
-    {
-        OnGameStarted?.Invoke(this, EventArgs.Empty);
-    }
-
+    
     [Rpc(SendTo.Server)]
     public void ClickedOnGridPositionRpc(int x, int y, PlayerType playerType)
     {
@@ -205,18 +191,45 @@ public partial class GameManager : NetworkBehaviour
 
         TestWinner();
     }
-
-    private void TestWinner()
+    
+    [Rpc(SendTo.Server)]
+    public void RematchRpc()
     {
-        for (int i = 0; i < lineList.Count; i++)
+        for (int x = 0; x < playerTypeArray.GetLength(0); x++)
         {
-            if (TestWinnerLine(lineList[i]))
+            for (int y = 0; y < playerTypeArray.GetLength(1); y++)
             {
-                currentPlayablePlayerType.Value = PlayerType.None;
-                TriggerOnGameWinRpc(i, playerTypeArray[lineList[i].centerGridPosition.x, lineList[i].centerGridPosition.y]);
-                break;
+                playerTypeArray[x, y] = PlayerType.None;
             }
         }
+
+        currentPlayablePlayerType.Value = PlayerType.Cross;
+        TriggerRematchRpc();
+    }
+    
+    public PlayerType GetLocalPlayerType()
+    {
+        return localPlayerType;
+    }
+
+    public PlayerType GetCurrentPlayablePlayerType()
+    {
+        return currentPlayablePlayerType.Value;
+    }
+
+    private void NetworkManager_OnClientConnectedCallback(ulong obj)
+    {
+        if (NetworkManager.Singleton.ConnectedClients.Count == 2)
+        {
+            currentPlayablePlayerType.Value = PlayerType.Cross;
+            TriggerOnGameStartedRpc();
+        }
+    }
+    
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerOnGameStartedRpc()
+    {
+        OnGameStarted?.Invoke(this, EventArgs.Empty);
     }
 
     [Rpc(SendTo.ClientsAndHost)]
@@ -232,6 +245,25 @@ public partial class GameManager : NetworkBehaviour
         });
     }
     
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerRematchRpc()
+    {
+        OnRematch.Invoke(this, EventArgs.Empty);
+    }
+    
+    private void TestWinner()
+    {
+        for (int i = 0; i < lineList.Count; i++)
+        {
+            if (TestWinnerLine(lineList[i]))
+            {
+                currentPlayablePlayerType.Value = PlayerType.None;
+                TriggerOnGameWinRpc(i, playerTypeArray[lineList[i].centerGridPosition.x, lineList[i].centerGridPosition.y]);
+                break;
+            }
+        }
+    }
+    
     private bool TestWinnerLine(Line line)
     {
         return TestWinnerLine
@@ -245,15 +277,5 @@ public partial class GameManager : NetworkBehaviour
     private bool TestWinnerLine(PlayerType a, PlayerType b, PlayerType c)
     {
         return a != PlayerType.None && a == b && b == c;
-    }
-
-    public PlayerType GetLocalPlayerType()
-    {
-        return localPlayerType;
-    }
-
-    public PlayerType GetCurrentPlayablePlayerType()
-    {
-        return currentPlayablePlayerType.Value;
     }
 }
