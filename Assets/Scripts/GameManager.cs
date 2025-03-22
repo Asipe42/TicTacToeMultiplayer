@@ -37,6 +37,7 @@ public partial class GameManager
     public EventHandler OnGameTie;
     public EventHandler OnRematch;
     public EventHandler OnChangedScore;
+    public EventHandler OnPlacedObject;
 
     public class OnClickedOnGridPositionEventArgs : EventArgs
     {
@@ -186,6 +187,7 @@ public partial class GameManager : NetworkBehaviour
         }
         
         playerTypeArray[x, y] = playerType;
+        TriggerPlacedObjectRpc();
         
         OnClickedOnGridPosition.Invoke(this, new OnClickedOnGridPositionEventArgs
         {
@@ -276,6 +278,12 @@ public partial class GameManager : NetworkBehaviour
     private void TriggerRematchRpc()
     {
         OnRematch.Invoke(this, EventArgs.Empty);
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerPlacedObjectRpc()
+    {
+        OnPlacedObject.Invoke(this, EventArgs.Empty);
     }
     
     private void TestWinner()
